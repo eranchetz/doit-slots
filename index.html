@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DoiT Cloud Ops Slots</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Load Tone.js for sound effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f0c29;
+            background-image: radial-gradient(circle at center, #3c1a5b 0%, #0f0c29 70%);
+            overflow: hidden;
+        }
+        
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        @keyframes spinFlicker {
+            0% { opacity: 0.8; transform: translateY(-5px); }
+            50% { opacity: 1; transform: translateY(5px); }
+            100% { opacity: 0.8; transform: translateY(-5px); }
+        }
+        
+        .spinning {
+            animation: spinFlicker 0.1s linear infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% {
+                box-shadow: 0 0 20px 5px rgba(79, 70, 229, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.05);
+            }
+            50% {
+                box-shadow: 0 0 35px 10px rgba(139, 92, 246, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.05);
+            }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); opacity: 0.1; }
+            50% { transform: translateY(-20px) rotate(5deg); opacity: 0.2; }
+            100% { transform: translateY(0px) rotate(0deg); opacity: 0.1; }
+        }
+
+        .bg-icon {
+            position: absolute;
+            font-size: 5rem;
+            color: #ffffff;
+            animation: float 6s infinite ease-in-out;
+            z-index: -10;
+        }
+        
+        .text-glow-green {
+            text-shadow: 0 0 5px rgba(52, 211, 153, 0.7), 0 0 10px rgba(52, 211, 153, 0.5);
+        }
+
+        /* Modal styles */
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center text-white p-4">
+
+    <!-- Floating Background Icons -->
+    <div class="fixed inset-0 -z-10 w-full h-full">
+        <span class="bg-icon" style="top: 10%; left: 15%; animation-delay: -2s;">☁️</span>
+        <span class="bg-icon" style="top: 20%; left: 80%; animation-delay: -4s; font-size: 4rem;">💻</span>
+        <span class="bg-icon" style="top: 70%; left: 10%; animation-delay: 0s; font-size: 6rem;">⚙️</span>
+        <span class="bg-icon" style="top: 80%; left: 90%; animation-delay: -5s;">🗃️</span>
+        <span class="bg-icon" style="top: 45%; left: 45%; animation-delay: -3s; font-size: 7rem;">☸️</span>
+    </div>
+
+    <!-- Game Assembly Wrapper -->
+    <div class="flex flex-col md:flex-row md:items-end md:space-x-6 items-center space-y-8 md:space-y-0">
+
+        <!-- Main Game Container -->
+        <main class="w-full max-w-md bg-gradient-to-b from-gray-800 to-gray-900 rounded-3xl p-6 sm:p-8
+                     border-4 border-t-slate-300 border-l-slate-400 border-b-slate-600 border-r-slate-600
+                     shadow-2xl"
+              style="animation: pulseGlow 4s infinite ease-in-out;">
+
+            <!-- Header -->
+            <header class="text-center mb-6">
+                <h1 class="text-6xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+                    DoiT
+                </h1>
+                <h2 class="text-2xl font-semibold text-gray-300 mt-2">
+                    ☁️ Cloud Ops Slots 💻
+                </h2>
+            </header>
+
+            <!-- Budget Display (VFD Screen) -->
+            <div class="bg-gray-900 rounded-lg p-4 mb-6 shadow-inner border border-black/50">
+                <span class="block text-sm font-medium text-green-300 uppercase tracking-wider font-orbitron">Cloud Budget</span>
+                <span id="budget-display" class="block text-5xl font-bold text-green-400 font-orbitron text-glow-green">$1000</span>
+            </div>
+
+            <!-- Slot Machine Reels -->
+            <div class="flex justify-around items-center h-36 sm:h-44 bg-black/50 rounded-lg my-6 relative overflow-hidden p-4 shadow-inner border border-black/50">
+                <!-- Payline -->
+                <div class="absolute left-0 right-0 top-1/2 h-1.5 bg-red-500 -translate-y-1/2 z-10"
+                     style="box-shadow: 0 0 10px 3px rgba(239, 68, 68, 0.7);"></div>
+                
+                <!-- Reels -->
+                <div id="reel1" class="reel text-5xl sm:text-7xl w-1/3 text-center transition-all duration-100">🚀</div>
+                <div id="reel2" class="reel text-5xl sm:text-7xl w-1/3 text-center transition-all duration-100">🖥️</div>
+                <div id="reel3" class="reel text-5xl sm:text-7xl w-1/3 text-center transition-all duration-100">☸️</div>
+            </div>
+
+            <!-- Message Box (VFD Screen) -->
+            <div id="message-box" 
+                 class="mt-6 text-center text-lg font-medium min-h-[3em] text-green-400 font-orbitron text-glow-green
+                        bg-gray-900 rounded-lg p-3 shadow-inner border border-black/50 flex items-center justify-center">
+                Welcome! Pull the lever!
+            </div>
+            
+        </main>
+
+        <!-- New Lever Container -->
+        <div id="lever-container" class="flex justify-center items-center md:pb-12">
+            <!-- The "slot" the lever moves in -->
+            <div class="w-10 h-48 bg-black/30 rounded-full shadow-inner relative">
+                <!-- The lever "stick" and "ball" assembly -->
+                <div id="lever-arm" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-48 transition-all duration-300 ease-in-out" style="transform-origin: bottom center;">
+                    <!-- Stick -->
+                    <div class="w-4 h-40 bg-gradient-to-t from-gray-500 to-gray-300 rounded-t-full shadow-md mx-auto"></div>
+                    <!-- Ball -->
+                    <div id="lever-ball" class="w-14 h-14 rounded-full bg-gradient-to-br from-red-500 to-red-800 border-4 border-red-900 shadow-lg cursor-pointer 
+                                 absolute -top-4 -left-3 transition-all duration-150 ease-in-out
+                                 hover:scale-105 active:scale-95">
+                    </div>
+                </div>
+                <!-- Base of the slot -->
+                <div class="w-12 h-12 bg-gradient-to-b from-gray-600 to-gray-800 rounded-full absolute -bottom-1 left-1/2 -translate-x-1/2 border-2 border-gray-900"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal Overlay -->
+    <div id="modal-overlay" class="modal fixed inset-0 bg-black/70 backdrop-blur-sm z-40 hidden" style="opacity: 0;"></div>
+
+    <!-- "Critical Bug" Modal -->
+    <div id="bug-modal" class="modal w-full max-w-lg fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl p-6 z-50 text-gray-800 hidden" style="opacity: 0;">
+        <div class="text-center">
+            <span class="text-7xl">🐞</span>
+            <h2 class="text-3xl font-bold mt-2 bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-orange-500">
+                Critical Outage!
+            </h2>
+            <p class="text-lg text-gray-700 mt-4">
+                A "Critical Outage" in the cloud isn't a game. Don't gamble with your cloud spend.
+            </p>
+            <p class="text-2xl font-bold text-gray-900 mt-4">
+                Take back control with DoiT.
+            </p>
+            <button id="bug-modal-close" class="mt-6 w-full text-lg font-semibold bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                Continue
+            </button>
+        </div>
+    </div>
+
+    <!-- "Optimization/FinOps" Modal (Refactored from Minor Bug) -->
+    <div id="minor-bug-modal" class="modal w-full max-w-lg fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl p-6 z-50 text-gray-800 hidden" style="opacity: 0;">
+        <div class="text-center">
+            <span id="minor-modal-icon" class="text-7xl">📉</span>
+            <h2 id="minor-modal-title" class="text-3xl font-bold mt-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-indigo-600">
+                Optimization Alert!
+            </h2>
+            <p id="minor-modal-body" class="text-lg text-gray-700 mt-4">
+                You're paying for capacity you aren't using. Even small inefficiencies add up to big costs over time.
+            </p>
+            <p class="text-2xl font-bold text-gray-900 mt-4">
+                DoiT: Cloud Control, Simplified.
+            </p>
+            <div class="mt-4">
+                <a href="https://www.doit.com" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline font-semibold text-sm">
+                    Find out how at doit.com &rarr;
+                </a>
+            </div>
+            <button id="minor-bug-modal-close" class="mt-4 w-full text-lg font-semibold bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                Continue
+            </button>
+        </div>
+    </div>
+
+    <!-- "Game Over" Modal -->
+    <div id="game-over-modal" class="modal w-full max-w-lg fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl p-6 z-50 text-gray-800 hidden" style="opacity: 0;">
+        <div class="text-center">
+            <span class="text-7xl">💸</span>
+            <h2 class="text-3xl font-bold mt-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600">
+                Budget Depleted!
+            </h2>
+            <p class="text-lg text-gray-700 mt-4">
+                Ran out of budget? In the real world, there's no reset button.
+            </p>
+            <p class="text-2xl font-bold text-gray-900 mt-4">
+                Get unified cloud control with DoiT.
+            </p>
+            <div class="mt-4">
+                <a href="https://www.doit.com" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline font-semibold text-sm">
+                    Visit doit.com &rarr;
+                </a>
+            </div>
+            <button id="game-over-modal-close" class="mt-4 w-full text-lg font-semibold bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                Try Again
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const reelElements = [
+                document.getElementById('reel1'),
+                document.getElementById('reel2'),
+                document.getElementById('reel3')
+            ];
+            const budgetDisplay = document.getElementById('budget-display');
+            const messageBox = document.getElementById('message-box');
+            const leverBall = document.getElementById('lever-ball');
+            const leverArm = document.getElementById('lever-arm');
+
+            // Modal Elements
+            const modalOverlay = document.getElementById('modal-overlay');
+            const bugModal = document.getElementById('bug-modal');
+            const gameOverModal = document.getElementById('game-over-modal');
+            const minorBugModal = document.getElementById('minor-bug-modal');
+            const bugModalClose = document.getElementById('bug-modal-close');
+            const gameOverModalClose = document.getElementById('game-over-modal-close');
+            const minorBugModalClose = document.getElementById('minor-bug-modal-close');
+
+            // Randomized FinOps Messages
+            const finOpsMessages = [
+                {
+                    icon: '📊',
+                    title: 'Unoptimized Spend!',
+                    body: 'Small leaks sink big ships. DoiT helps you plug the holes in your cloud budget before they grow into craters.'
+                },
+                {
+                    icon: '📉',
+                    title: 'Cloud Waste Alert!',
+                    body: 'Idle resources are eating your margin. DoiT provides the deep visibility you need to stop the bleed.'
+                },
+                {
+                    icon: '🧠',
+                    title: 'FinOps Opportunity!',
+                    body: "You're paying for capacity you aren't using. DoiT's automated scaling keeps your cloud costs in check."
+                },
+                {
+                    icon: '🛡️',
+                    title: 'Efficiency Warning!',
+                    body: 'Your cloud unit economics are drifting. DoiT brings world-class FinOps expertise to your engineering teams.'
+                }
+            ];
+
+            // --- Game State ---
+            let budget = 1000;
+            const spinCost = 50;
+            let isSpinning = false;
+            let isGameOver = false;
+            let audioInitialized = false;
+
+            // --- Symbol Definitions ---
+            const symbolPool = [
+                '🐞', '🐞', '🐞', '🐞', '🐞', '🐞',
+                '🖥️', '🖥️', '🖥️', '🖥️',
+                '🗃️', '🗃️', '🗃️', '🗃️',
+                '🔒', '🔒', '🔒', '🔒',
+                '🚀', '🚀', '🚀',
+                '☸️'
+            ];
+            const symbolNames = {
+                '🐞': "Bugs", '🖥️': "Servers", '🗃️': "Databases",
+                '🔒': "Security", '🚀': "Launches", '☸️': "Kubernetes"
+            };
+
+            // --- Sound Effects (Tone.js) ---
+            const leverSynth = new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.2, release: 0.2 } }).toDestination();
+            const reelStopSynth = new Tone.MonoSynth({ oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
+            reelStopSynth.volume.value = -10;
+            const winSynth = new Tone.PolySynth(Tone.Synth).toDestination();
+            const jackpotSynth = new Tone.PolySynth(Tone.Synth).toDestination();
+            const gameOverSynth = new Tone.PolySynth(Tone.Synth).toDestination();
+            const loseSynth = new Tone.PolySynth(Tone.Synth).toDestination();
+
+
+            // --- Modal Functions ---
+            function showModal(modalElement) {
+                modalOverlay.classList.remove('hidden');
+                modalElement.classList.remove('hidden');
+                void modalOverlay.offsetWidth;
+                void modalElement.offsetWidth;
+                modalOverlay.style.opacity = 1;
+                modalElement.style.opacity = 1;
+            }
+
+            function hideModal(modalElement) {
+                modalOverlay.style.opacity = 0;
+                modalElement.style.opacity = 0;
+                setTimeout(() => {
+                    modalOverlay.classList.add('hidden');
+                    modalElement.classList.add('hidden');
+                }, 250); 
+            }
+
+            // --- Game Functions ---
+            function updateBudgetUI() {
+                budgetDisplay.textContent = `$${budget}`;
+            }
+
+            function getRandomSymbol() {
+                return symbolPool[Math.floor(Math.random() * symbolPool.length)];
+            }
+            
+            function showMessage(text) {
+                messageBox.textContent = text;
+            }
+
+            function enableLever() {
+                isSpinning = false;
+                leverBall.style.cursor = 'pointer';
+                leverBall.classList.remove('opacity-50');
+            }
+
+            function disableLever() {
+                isSpinning = true;
+                leverBall.style.cursor = 'not-allowed';
+                leverBall.classList.add('opacity-50');
+            }
+
+            function resetGame() {
+                budget = 1000;
+                isGameOver = false;
+                showMessage("Budget Reset! Pull the lever!");
+                reelElements.forEach(reel => {
+                    reel.classList.remove('spinning');
+                    reel.textContent = '🚀';
+                });
+                enableLever();
+                updateBudgetUI();
+            }
+
+            function checkWin(symbols) {
+                const [s1, s2, s3] = symbols;
+                let winnings = 0;
+                let message = "Try again!";
+                let winType = "none"; 
+                const now = Tone.now();
+                const bugCount = symbols.filter(s => s === '🐞').length;
+
+                if (s1 === s2 && s2 === s3) {
+                    const prizeName = symbolNames[s1] || "Win";
+                    switch (s1) {
+                        case '☸️':
+                            winnings = 2000; message = `K8S JACKPOT! 🔥`; winType = 'jackpot';
+                            break;
+                        case '🚀':
+                            winnings = 750; message = `Triple ${prizeName}! 🚀`; winType = 'major';
+                            break;
+                        case '🖥️': case '🗃️': case '🔒':
+                            winnings = 250; message = `Triple ${prizeName}!`; winType = 'major';
+                            break;
+                        case '🐞':
+                            winnings = 0; message = `Critical Outage! 🐞`; winType = 'critical_bug';
+                            break;
+                    }
+                } else if ((s1 === s2 && s1 !== s3) || (s1 === s3 && s1 !== s2) || (s2 === s3 && s2 !== s1)) {
+                    let pairSymbol = (s1 === s2) ? s1 : (s1 === s3 ? s1 : s2);
+                    if (pairSymbol === '☸️' || pairSymbol === '🚀') {
+                        winnings = (pairSymbol === '☸️') ? 100 : 75;
+                        message = (pairSymbol === '☸️') ? "High Availability!" : "Partial Scale!";
+                        winType = 'minor';
+                    }
+                } else if (bugCount > 0 && winType === 'none') {
+                    // Trigger Randomized Marketing Modal
+                    const msg = finOpsMessages[Math.floor(Math.random() * finOpsMessages.length)];
+                    document.getElementById('minor-modal-icon').textContent = msg.icon;
+                    document.getElementById('minor-modal-title').textContent = msg.title;
+                    document.getElementById('minor-modal-body').textContent = msg.body;
+                    
+                    message = "Inefficiency detected...";
+                    winType = 'minor_bug';
+                }
+
+                // --- Play Sounds & Show Modals ---
+                if (winType === 'jackpot') {
+                    jackpotSynth.triggerAttackRelease(["C5", "E5", "G5", "C6"], "8n", now);
+                } else if (winType === 'major') {
+                    winSynth.triggerAttackRelease(["C4", "E4", "G4"], "4n", now);
+                } else if (winType === 'minor') {
+                    winSynth.triggerAttackRelease(["C4", "G4"], "8n", now);
+                } else if (winType === 'critical_bug') {
+                    loseSynth.triggerAttackRelease(["E3", "C3"], "8n", now);
+                    showModal(bugModal);
+                } else if (winType === 'minor_bug') {
+                    loseSynth.triggerAttackRelease("C3", "16n", now); 
+                    showModal(minorBugModal);
+                }
+                
+                if (winnings > 0) {
+                    budget += winnings;
+                    showMessage(`${message} You won $${winnings}!`);
+                } else {
+                    showMessage(message);
+                }
+
+                updateBudgetUI();
+
+                if (budget < spinCost) {
+                    isGameOver = true;
+                    showMessage("Budget Depleted! Pull to Reset.");
+                    gameOverSynth.triggerAttackRelease(["G3", "E3", "C3"], "4n", now + 0.2);
+                    showModal(gameOverModal);
+                }
+
+                const modalShown = ['critical_bug', 'minor_bug'].includes(winType) || (budget < spinCost);
+                if (!modalShown) {
+                    enableLever();
+                }
+            }
+
+            function runSpin() {
+                budget -= spinCost;
+                updateBudgetUI();
+                showMessage("Deploying resources...");
+
+                let finalSymbols = [];
+
+                reelElements.forEach((reel, index) => {
+                    reel.classList.add('spinning');
+                    const interval = setInterval(() => {
+                        reel.textContent = getRandomSymbol();
+                    }, 100);
+
+                    setTimeout(() => {
+                        clearInterval(interval);
+                        reel.classList.remove('spinning');
+                        reelStopSynth.triggerAttackRelease("C4", "16n", Tone.now());
+                        
+                        const finalSymbol = getRandomSymbol();
+                        reel.textContent = finalSymbol;
+                        finalSymbols[index] = finalSymbol;
+
+                        if (index === reelElements.length - 1) {
+                            checkWin(finalSymbols);
+                        }
+                    }, 1000 + index * 500);
+                });
+            }
+
+            async function handleLeverPull() {
+                if (!audioInitialized) {
+                    await Tone.start();
+                    audioInitialized = true;
+                }
+
+                if (isGameOver) {
+                    leverSynth.triggerAttackRelease("C4", "8n"); 
+                    resetGame();
+                    return;
+                }
+
+                if (isSpinning) {
+                    return;
+                }
+
+                disableLever();
+                leverArm.style.transform = 'rotate(40deg)';
+                leverSynth.triggerAttackRelease("G2", "4n"); 
+
+                setTimeout(() => {
+                    leverArm.style.transform = 'rotate(0deg)';
+                }, 400);
+
+                runSpin();
+            }
+
+            // --- Event Listeners ---
+            leverBall.addEventListener('click', handleLeverPull);
+            
+            bugModalClose.addEventListener('click', () => {
+                hideModal(bugModal);
+                if (!isGameOver) enableLever();
+            });
+
+            minorBugModalClose.addEventListener('click', () => {
+                hideModal(minorBugModal);
+                if (!isGameOver) enableLever();
+            });
+            
+            gameOverModalClose.addEventListener('click', () => {
+                hideModal(gameOverModal);
+                enableLever(); 
+            });
+
+            updateBudgetUI();
+        });
+    </script>
+</body>
+</html>
